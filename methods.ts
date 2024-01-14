@@ -3,20 +3,19 @@ import { Request, Response } from "express";
 import { jsx } from "./jsx/index.js";
 import { ROUTE_CONFIG } from "./const.js";
 import { MethodExport } from "./types.js";
+import { cleanString } from "./html/utils.js";
 
 export function isCjs() {
     return typeof module !== "undefined" && !!module?.exports;
 }
 
-export function renderElement(element: any, req: Request, res: Response) {
+export async function renderElement(element: any, req: Request, res: Response) {
     const html = jsx(element, {
         req,
         children: [/* support for injected children */]
     });
-    
-    console.log(html.toString())
 
-    res.send(html.toString());
+    res.send(cleanString(await html.toString()));
 }
 
 export function buildRoute(parsedFile: ParsedPath) {
@@ -79,7 +78,7 @@ export function getMethodKey(method: string) {
 export function isFileIgnored(parsedFile: ParsedPath) {
     return (
         !ROUTE_CONFIG.VALID_FILE_EXTENSIONS.includes(
-            parsedFile.ext.toLowerCase()
+            parsedFile.ext.toLowerCase() as any
         ) ||
         ROUTE_CONFIG.INVALID_NAME_SUFFIXES.some((suffix) =>
             parsedFile.base.toLowerCase().endsWith(suffix)

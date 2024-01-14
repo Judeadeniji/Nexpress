@@ -1,7 +1,7 @@
-import { escapeToBuffer, stringBufferToString } from "./utils.js"
+import { cleanString, escapeToBuffer, stringBufferToString } from "./utils.js"
 import { raw } from "./shared.js"
 
-function html (strings, ...values: unknown[]) {
+function html (strings: TemplateStringsArray, ...values: any[]) {
   const buffer: (string | Promise<string>)[] = [""];
   
   for (let idx = 0, len = strings.length - 1; idx < len; idx++) {
@@ -39,5 +39,6 @@ export {
   html,
   raw,
   escapeToBuffer,
-  stringBufferToString
+  stringBufferToString,
+  cleanString
 }

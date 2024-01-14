@@ -1,11 +1,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as esbuild from 'esbuild';
+import { ROUTE_CONFIG } from './const';
 
 interface BuildOptions {
   inputDir: string;
   outputDir: string;
-  extensions: string[];
+  extensions: typeof ROUTE_CONFIG.VALID_FILE_EXTENSIONS;
 }
 
 function replaceExtension(filePath: string, newExtension: string): string {
@@ -35,12 +36,12 @@ function buildFiles(options: BuildOptions): void {
   }
 }
 
-function getAllFiles(directory: string, extensions: string[]): string[] {
-  const files: string[] = [];
+function getAllFiles(directory: string, extensions: BuildOptions['extensions']) {
+  const files: `${string}${typeof extensions[number]}`[] = [];
 
   function walk(dir: string) {
     for (const file of fs.readdirSync(dir)) {
-      const filePath = path.join(dir, file);
+      const filePath = path.join(dir, file) as typeof files[number] ;
       const isDirectory = fs.statSync(filePath).isDirectory();
   
       if (isDirectory) {

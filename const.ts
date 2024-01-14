@@ -5,7 +5,7 @@ export const DEFAULT_PORT = 3001;
 export const IS_ESM = !isCjs();
 export const MODULE_IMPORT_PREFIX = IS_ESM ? "file://" : "";
 
-export const DEFAULT_ROUTER_DIRECTORY = "app";
+export const DEFAULT_ROUTER_DIRECTORY = "routes";
 
 export const CJS_MAIN_FILENAME =
     typeof require !== "undefined" && require.main?.filename;
@@ -28,5 +28,7 @@ export const ROUTE_CONFIG = {
         "connect",
         "options",
         "trace",
-    ] as const,
-};
+    ],
+} as const;
+
+export type Method = typeof ROUTE_CONFIG.DEFAULT_METHODS[number]

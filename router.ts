@@ -1,9 +1,9 @@
 import { readdirSync, statSync } from "fs";
 import path from "path";
-import { Express } from "express";
+import { Express, Response } from "express";
 import {
     DEFAULT_ROUTER_DIRECTORY,
-    MODULE_IMPORT_PREFIX,
+    Method,
     PROJECT_DIRECTORY,
     ROUTE_CONFIG,
 } from "./const.js";
@@ -20,6 +20,7 @@ import {
 } from "./methods.js";
 import { File, Route, RouterOptions } from "./types.js";
 import { importSSRModule } from "./shared-utils.js"
+import { createNExpressCtx } from "./server_context/context.js";
 
 async function createRouter(app: Express, options: RouterOptions = {}) {
     const files = fetchRoutes(
@@ -39,19 +40,28 @@ async function createRouter(app: Express, options: RouterOptions = {}) {
                 );
             }
 
-            const methodKey = getMethodKey(method) as keyof Express;
-            const methodHandler = getHandler(handler);
-            if (methodHandler.length === 0)
-                throw new Error(
-                    `Handler for method '${method}' in route '${url}' is invalid`
-                );
+            const methodKey = getMethodKey(method) as Method;
+            const methodHandler = getHandler(handler).map(handler => {
+                return (req, res: Response<any, Record<string, any>>) => {
+                    const ctx = createNExpressCtx(req, res)
 
-            if (!ROUTE_CONFIG.DEFAULT_METHODS.includes(methodKey as string))
+                    return handler(ctx)
+                }
+            });
+            if (methodHandler.length === 0){
+                // handle other cases
+
+                console.log(methodKey, handler)
+                continue
+            }
+
+            if (!ROUTE_CONFIG.DEFAULT_METHODS.includes(methodKey as (typeof ROUTE_CONFIG.DEFAULT_METHODS)[number]))
                 continue;
 
             app[methodKey](url, ...methodHandler);
         }
 
+        // jsx pages
         if (typeof exports.default !== "undefined") {
             if (isHandler(exports.default)) {
                 app.get(url, (req, res) => {
@@ -111,7 +121,6 @@ async function generateRoutes(files: File[]) {
           path.join(file.path, file.name)
         );
         
-        console.log("exports", exports)
 
         if (parsedFile.name.startsWith("route") && exports.default)
             throw new Error(

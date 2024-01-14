@@ -1,7 +1,8 @@
 // /jsx/index.ts
 
 import { raw, html, escapeToBuffer, stringBufferToString } from "../html/index.js";
-import { ErrorBoundary } from "./components.js";
+import { StringBuffer } from "../html/utils.js";
+import { JSXTag } from "../types.js";
 
 const VOIDTAGS = [
   "area",
@@ -19,7 +20,7 @@ const VOIDTAGS = [
   "source",
   "track",
   "wbr"
-];
+] as const;
 
 const BOOLEANATTRIBUTES = [
   "allowfullscreen",
@@ -47,9 +48,17 @@ const BOOLEANATTRIBUTES = [
   "required",
   "reversed",
   "selected"
-];
+] as const;
 
-var childrenToStringToBuffer = (children, buffer) => {
+function childrenToStringToBuffer (children: JSX.JSXProps['children'], buffer: StringBuffer) {
+  if (!children) {
+    throw new Error("No children provided, this is a bug in Nexpress. Please report it.");
+  }
+
+  if (!Array.isArray(children)) {
+    children = [children]
+  }
+
   for (let i = 0, len = children.length; i < len; i++) {
     const child = children[i];
     if (typeof child === "string") {
@@ -58,20 +67,24 @@ var childrenToStringToBuffer = (children, buffer) => {
       continue;
     } else if (child instanceof JSXNode) {
       child.toStringToBuffer(buffer);
-    } else if (typeof child === "number" || child.isEscaped) {
+    } else if (typeof child === "number" || (child instanceof JSXNode) && child.isEscaped) {
       ;
       buffer[0] += child;
     } else if (child instanceof Promise) {
       buffer.unshift("", child);
     } else {
-      childrenToStringToBuffer(child, buffer);
+      childrenToStringToBuffer(child as any, buffer);
     }
   }
 };
 
-var JSXNode = class {
+class JSXNode  {
+  isEscaped: boolean;
+  tag: JSXTag;
+  props: JSX.JSXProps;
+  children: any;
   
-  constructor(tag, jsxProps) {
+  constructor(tag: JSXTag, jsxProps: JSX.JSXProps) {
     this.isEscaped = true;
     this.tag = tag;
     this.props = jsxProps;
@@ -85,7 +98,8 @@ var JSXNode = class {
     return buffer.length === 1 ? buffer[0] : stringBufferToString(buffer);
   }
   
-  toStringToBuffer(buffer) {
+  toStringToBuffer(buffer: StringBuffer) {
+
     const tag = this.tag;
     const props = this.props;
     let { children } = this;
@@ -107,7 +121,7 @@ var JSXNode = class {
       } else if (v === null || v === void 0) {
       } else if (typeof v === "number" || v.isEscaped) {
         buffer[0] += ` ${key}="${v}"`;
-      } else if (typeof v === "boolean" && BOOLEANATTRIBUTES.includes(key)) {
+      } else if (typeof v === "boolean" && BOOLEANATTRIBUTES.includes(key as any)) {
         if (v) {
           buffer[0] += ` ${key}=""`;
         }
@@ -125,7 +139,7 @@ var JSXNode = class {
         buffer[0] += '"';
       }
     }
-    if (VOIDTAGS.includes(tag)) {
+    if (VOIDTAGS.includes(tag as any)) {
       buffer[0] += "/>";
       return;
     }
@@ -135,8 +149,11 @@ var JSXNode = class {
   }
 };
 
-var JSXFunctionNode = class extends JSXNode {
-  toStringToBuffer(buffer) {
+class JSXFunctionNode extends JSXNode {
+  //@ts-ignore
+  tag!: (props: JSX.JSXProps) => JSXNode | Promise<JSXNode>;
+  props!: JSX.JSXProps;
+  toStringToBuffer(buffer: StringBuffer) {
     const { children } = this;
     const res = this.tag.call(null, {
       ...this.props,
@@ -146,6 +163,7 @@ var JSXFunctionNode = class extends JSXNode {
       buffer.unshift("", res);
     } else if (res instanceof JSXNode) {
       res.toStringToBuffer(buffer);
+      // @ts-ignore
     } else if (typeof res === "number" || res.isEscaped) {
       buffer[0] += res;
     } else {
@@ -154,20 +172,21 @@ var JSXFunctionNode = class extends JSXNode {
   }
 };
 var JSXFragmentNode = class extends JSXNode {
-  toStringToBuffer(buffer) {
+  toStringToBuffer(buffer: StringBuffer) {
     childrenToStringToBuffer(this.children, buffer);
   }
 };
 
-var jsxFn = (tag, props, c) => {
+var jsxFn = (tag: JSXTag, props: JSX.JSXProps) => {
   if (typeof tag === "function") {
     return new JSXFunctionNode(tag, props);
   } else {
     return new JSXNode(tag, props);
   }
 };
-var jsxAttr = (name, value) => raw(name + '="' + html`${value}` + '"');
-var jsxEscape = (value) => value;
+
+var jsxAttr = (name: string, value: any) => raw(name + '="' + html`${value}` + '"');
+var jsxEscape = (value: any) => value;
 
 var shallowEqual = (a, b) => {
   if (a === b) {
@@ -202,14 +221,15 @@ var Fragment = (props) => {
   return new JSXFragmentNode("", {  children: props.children ? [props.children] : [] });
 };
 
-var createContext = (defaultValue) => {
-  const values = [defaultValue];
+function createContext<CtxType>(defaultValue: CtxType) {
+  const values: CtxType[] = [defaultValue];
   return {
     values,
-    Provider(props) {
+    Provider(props: JSX.JSXProps & { value: CtxType }) {
       values.push(props.value);
-      const string = props.children ? (Array.isArray(props.children) ? new JSXFragmentNode("", { children: props.children }) : props.children).toString() : "";
+      const string: any = props.children ? (Array.isArray(props.children) ? new JSXFragmentNode("", { children: props.children }) : props.children).toString() : "";
       values.pop();
+      //@ts-ignore
       if (string instanceof Promise) {
         return Promise.resolve().then(async () => {
           values.push(props.value);
@@ -225,18 +245,19 @@ var createContext = (defaultValue) => {
   };
 };
 
-var useContext = (context) => {
+function useContext(context: ReturnType<typeof createContext>) {
   return context.values[context.values.length - 1];
 };
 
 export {
-  ErrorBoundary,
   Fragment,
   JSXNode,
   createContext,
   jsxFn as jsx,
   jsxFn as jsxDev,
   jsxFn as jsxs,
+  jsxAttr,
+  jsxEscape,
   memo,
   useContext
 };

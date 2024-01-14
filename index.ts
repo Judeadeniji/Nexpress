@@ -1,11 +1,16 @@
 import BP from "body-parser";
 import cors from "cors";
 import path from "node:path"
-import express from "express";
+import express, { Handler, IRouterHandler, Request, Response } from "express";
 import { createRouter } from "./router.js";
 import { buildFiles as transformAppCode } from "./esbuild.js";
 import { PROJECT_DIRECTORY, ROUTE_CONFIG } from "./const.js"
+import { NExpressContext } from "./server_context/index.js";
+
 // import { initiateErrorHandler } from "./utils.js";
+
+
+
 
 function createApp(opts = {}) {
     const app = express();
@@ -13,25 +18,46 @@ function createApp(opts = {}) {
     app.use(BP.urlencoded({ extended: false }));
     app.use(BP.json());
     app.use(cors());
-    function listen(port: number, callback?: Function, onErrorCallback?: Function) {
+    function listen(port: number, hostname: string, backlog: number, callback?: (() => void) | undefined) {
       transformAppCode({
         inputDir: path.join(PROJECT_DIRECTORY, "src"),
         outputDir: path.join(PROJECT_DIRECTORY, ".nexpress"),
         extensions: ROUTE_CONFIG.VALID_FILE_EXTENSIONS
       })
       createRouter(app)
-      .then(() => app.listen(port, callback))
+      .then(() => app.listen(port, hostname, backlog, callback ))
       .catch((error) => {
         console.error(error)
       });
       // initiateErrorHandler();
     }
 
-    return { listen };
+    const res = { listen, use }
+
+    function use(...handlers: any[]) {
+      app.use(...handlers)
+      return res
+    }
+
+    return res;
 }
 
+
 export {
-  createApp as createNxApp
+  createApp as createNxApp,
 }
 
 export * from "./jsx/index.js"
+export * from "./jsx/components.js"
+
+
+// export types
+
+export {
+  Handler,
+  Request,
+  Response,
+  NExpressContext
+}
+
+export * from './types.js'

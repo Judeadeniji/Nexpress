@@ -20,8 +20,8 @@ export type HtmlEscaped = {
 export type HtmlEscapedString = string & HtmlEscaped;
 
 
-function raw(value: unknown, callbacks: HtmlEscapedCallback[]) {
-  const escapedString = new String(value);
+function raw(value: unknown, callbacks?: HtmlEscapedCallback[]) {
+  const escapedString = new String(value) as HtmlEscapedString;
 
   escapedString.isEscaped = true;
   escapedString.callbacks = callbacks;

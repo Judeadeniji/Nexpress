@@ -1,12 +1,13 @@
-import { raw } from "./shared.js"
+import { HtmlEscapedCallback, raw } from "./shared.js"
 
-export type StringBuffer = (string | Promise<string>)[];
+// using `any` here because it's the only way to get the type to work
+export type StringBuffer = ((string | Promise<string>) & any)[];
 
 var escapeRgx = /[&<>'"]/;
 
 async function stringBufferToString (buffer: StringBuffer) {
   let str = "";
-  const callbacks = [];
+  const callbacks: HtmlEscapedCallback[] = [];
   
   for (let i = buffer.length - 1; ; i--) {
     str += buffer[i];
@@ -81,7 +82,12 @@ function escapeToBuffer (str: string, buffer: StringBuffer) {
   buffer[0] += str.substring(lastIndex, index);
 };
 
+function cleanString(str: string) {
+  return str.split('').map(s => s).filter(s => s != '\n').join('').trim()
+}
+
 export {
   stringBufferToString,
-  escapeToBuffer
+  escapeToBuffer,
+  cleanString
 }

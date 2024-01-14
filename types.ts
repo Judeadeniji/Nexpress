@@ -1,4 +1,23 @@
-import { Handler } from "express";
+import { JSXNode } from "./jsx/index.js";
+import { type NExpressContext } from "./server_context/index.js"
+
+// declare a global JSX namespace
+declare global {
+    namespace JSX {
+        type IntrinsicElements = HTMLElement & {
+            [x in keyof HTMLElementTagNameMap]: HTMLElementTagNameMap[x];
+        } & {
+            [x in keyof HTMLElementDeprecatedTagNameMap]: HTMLElementDeprecatedTagNameMap[x];
+        };
+        interface Element {}
+        interface JSXProps {
+            children?: (JSX.Element| typeof JSXNode | string)[];
+            [x: string]: any;
+        }
+    }
+}
+
+type Handler = (ctx: NExpressContext) => void
 
 export type MethodExport = Handler | Handler[];
 
@@ -34,4 +53,10 @@ export interface Route {
     url: string;
     priority: number;
     exports: Exports;
+}
+
+export type JSXTag = string | ((props: any) => JSX.Element);
+
+export {
+    JSX
 }
