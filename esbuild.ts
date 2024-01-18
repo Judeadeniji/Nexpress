@@ -10,13 +10,22 @@ interface BuildOptions {
 }
 
 function replaceExtension(filePath: string, newExtension: string): string {
-  const regex = /\.[^.]+$/; // Match the last period and everything after
-  return filePath.replace(regex, `.${newExtension}`);
+  const validExtensions = ROUTE_CONFIG.VALID_FILE_EXTENSIONS
+  const currentExtension = path.extname(filePath) as BuildOptions['extensions'][number];
+
+  if (!validExtensions.includes(currentExtension)) {
+    // File already has a invalid extension, no need to replace
+    return filePath;
+  }
+
+  // Replace the extension with the new one
+  return filePath.replace(/\.[^.]+$/, `.${newExtension}`);
 }
+
 
 function buildFiles(options: BuildOptions): void {
   const { inputDir, outputDir, extensions, ...opts } = options;
-  const files = getAllFiles(inputDir, extensions);
+  const files = getAllFiles(inputDir);
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
@@ -36,8 +45,8 @@ function buildFiles(options: BuildOptions): void {
   }
 }
 
-function getAllFiles(directory: string, extensions: BuildOptions['extensions']) {
-  const files: `${string}${typeof extensions[number]}`[] = [];
+function getAllFiles(directory: string) {
+  const files: `${string}${BuildOptions['extensions'][number]}`[] = [];
 
   function walk(dir: string) {
     for (const file of fs.readdirSync(dir)) {
@@ -47,9 +56,7 @@ function getAllFiles(directory: string, extensions: BuildOptions['extensions']) 
       if (isDirectory) {
         walk(filePath);
       } else {
-        if (extensions.some((ext) => file.endsWith(ext))) {
           files.push(filePath);
-        }
       }
     }
   }

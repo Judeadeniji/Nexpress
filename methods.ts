@@ -1,21 +1,40 @@
-import { ParsedPath } from "path";
+import { ParsedPath } from "node:path";
 import { Request, Response } from "express";
 import { jsx } from "./jsx/index.js";
 import { ROUTE_CONFIG } from "./const.js";
 import { MethodExport } from "./types.js";
 import { cleanString } from "./html/utils.js";
+import { global_ctx } from "./server_context/context.js"
+import { renderToReadableStream } from "./jsx/index.js"
+import { html as html$$ } from "./html/index.js"
+
 
 export function isCjs() {
     return typeof module !== "undefined" && !!module?.exports;
 }
 
 export async function renderElement(element: any, req: Request, res: Response) {
+    global_ctx.req = req
+    global_ctx.res = res
     const html = jsx(element, {
-        req,
+        path: req.route.path,
+        params: req.params,
+        url: req.url,
+        query: req.query,
+        body: req.body,
+        method: req.method,
+        rawHeaders: req.rawHeaders,
+        headers: req.headers,
         children: [/* support for injected children */]
     });
-
-    res.send(cleanString(await html.toString()));
+    
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Transfer-Encoding', 'chunked');
+    
+    const stream = renderToReadableStream(html);
+    
+    stream.pipe(res)
+    //res.send(cleanString(html$$(html.toString())));
 }
 
 export function buildRoute(parsedFile: ParsedPath) {

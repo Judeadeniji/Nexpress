@@ -1,5 +1,11 @@
 import { HtmlEscapedCallback, raw } from "./shared.js"
 
+const HtmlEscapedCallbackPhase = {
+  Stringify: 1,
+  BeforeStream: 2,
+  Stream: 3
+} as const;
+
 // using `any` here because it's the only way to get the type to work
 export type StringBuffer = ((string | Promise<string>) & any)[];
 
@@ -82,12 +88,40 @@ function escapeToBuffer (str: string, buffer: StringBuffer) {
   buffer[0] += str.substring(lastIndex, index);
 };
 
+async function resolveCallback (str, phase, preserveCallbacks, context, buffer) {
+  const callbacks = str.callbacks;
+  
+  if (!callbacks?.length) {
+    return Promise.resolve(str);
+  }
+  
+  if (buffer) {
+    buffer[0] += str;
+  } else {
+    buffer = [str];
+  }
+  const resStr = Promise.all(callbacks.map((c) => c({ phase, buffer, context }))).then(
+    (res) => Promise.all(
+      res.filter(Boolean).map((str2) => resolveCallback(str2, phase, false, context, buffer))
+    ).then(() => buffer[0])
+  );
+  
+  if (preserveCallbacks) {
+    return raw(await resStr, callbacks);
+  } else {
+    return resStr;
+  }
+};
+
+
 function cleanString(str: string) {
   return str.split('').map(s => s).filter(s => s != '\n').join('').trim()
 }
 
 export {
   stringBufferToString,
+  resolveCallback,
   escapeToBuffer,
-  cleanString
+  cleanString,
+  HtmlEscapedCallbackPhase
 }

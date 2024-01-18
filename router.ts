@@ -22,6 +22,8 @@ import { File, Route, RouterOptions } from "./types.js";
 import { importSSRModule } from "./shared-utils.js"
 import { createNExpressCtx } from "./server_context/context.js";
 
+const route_map = new Map()
+
 async function createRouter(app: Express, options: RouterOptions = {}) {
     const files = fetchRoutes(
         options.directory ??
@@ -115,6 +117,9 @@ async function generateRoutes(files: File[]) {
         const route = buildRoute(parsedFile);
         const url = buildUrl(route);
         const priority = calculatePriority(url);
+        
+        // add to route map
+        route_map.set(url, file.path)
 
         // const exports = await import(
         const exports = await importSSRModule(
@@ -163,5 +168,6 @@ async function generateRoutes(files: File[]) {
 }
 
 export {
-  createRouter
+  createRouter,
+  route_map
 }

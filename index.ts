@@ -32,10 +32,15 @@ function createApp(opts = {}) {
       // initiateErrorHandler();
     }
 
-    const res = { listen, use }
+    const res = { listen, use, set }
 
     function use(...handlers: any[]) {
       app.use(...handlers)
+      return res
+    }
+    
+    function set(a, b) {
+      app.set(a, b)
       return res
     }
 

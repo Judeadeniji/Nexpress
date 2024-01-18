@@ -12,11 +12,18 @@ export interface NxResponseType<R> {
   status: keyof StatusCode | StatusCode[keyof StatusCode]
 }
 
+const global_ctx: { req: Request | null; res: Response | null } = {
+  req: null,
+  res: null,
+}
+
 
 class NExpressContext {
   private raw: Request;
   private _res: Response;
   constructor(request: Request, response: Response) {
+    global_ctx.req = request
+    global_ctx.res = response
     this.raw = request;
     this._res = response;
   }
@@ -57,8 +64,8 @@ class NExpressContext {
   }
 
   
-  html(str: string) {
-    const h = html`${str}`
+  html(htm: any) {
+    const h = typeof htm === 'string' ? htm : html`${htm}`
 
     if (h instanceof Promise) {
       h.then(str => {
@@ -101,5 +108,6 @@ function createNExpressCtx(request: Request, response: Response) {
 
 export {
   createNExpressCtx,
-  type NExpressContext
+  type NExpressContext,
+  global_ctx
 }

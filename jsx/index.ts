@@ -61,9 +61,9 @@ function childrenToStringToBuffer (children: JSX.JSXProps['children'], buffer: S
 
   for (let i = 0, len = children.length; i < len; i++) {
     const child = children[i];
-    if (typeof child === "string") {
-      escapeToBuffer(child, buffer);
-    } else if (typeof child === "boolean" || child === null || child === void 0) {
+    if ((typeof child === "string") || child.constructor?.name?.toLowerCase?.() === "string") {
+      escapeToBuffer(child as any, buffer);
+    } else if (typeof child === "boolean" || child === null || child === undefined) {
       continue;
     } else if (child instanceof JSXNode) {
       child.toStringToBuffer(buffer);
@@ -118,7 +118,7 @@ class JSXNode  {
         buffer[0] += ` ${key}="`;
         escapeToBuffer(v, buffer);
         buffer[0] += '"';
-      } else if (v === null || v === void 0) {
+      } else if (v === null || v === undefined) {
       } else if (typeof v === "number" || v.isEscaped) {
         buffer[0] += ` ${key}="${v}"`;
       } else if (typeof v === "boolean" && BOOLEANATTRIBUTES.includes(key as any)) {
@@ -171,13 +171,14 @@ class JSXFunctionNode extends JSXNode {
     }
   }
 };
-var JSXFragmentNode = class extends JSXNode {
+
+ class JSXFragmentNode extends JSXNode {
   toStringToBuffer(buffer: StringBuffer) {
     childrenToStringToBuffer(this.children, buffer);
   }
 };
 
-var jsxFn = (tag: JSXTag, props: JSX.JSXProps) => {
+function jsxFn(tag: JSXTag, props: JSX.JSXProps) {
   if (typeof tag === "function") {
     return new JSXFunctionNode(tag, props);
   } else {
@@ -185,10 +186,13 @@ var jsxFn = (tag: JSXTag, props: JSX.JSXProps) => {
   }
 };
 
-var jsxAttr = (name: string, value: any) => raw(name + '="' + html`${value}` + '"');
-var jsxEscape = (value: any) => value;
+function jsxAttr (name: string, value: any) {
+  return raw(name + '="' + html`${value}` + '"');
+}
 
-var shallowEqual = (a, b) => {
+const jsxEscape = (value: any) => value;
+
+const shallowEqual = (a, b) => {
   if (a === b) {
     return true;
   }
@@ -205,19 +209,19 @@ var shallowEqual = (a, b) => {
   return true;
 };
 
-var memo = (component, propsAreEqual = shallowEqual) => {
-  let computed = void 0;
-  let prevProps = void 0;
+function memo(component, propsAreEqual = shallowEqual) {
+  let computed = undefined;
+  let prevProps = undefined;
   return (props) => {
     if (prevProps && !propsAreEqual(prevProps, props)) {
-      computed = void 0;
+      computed = undefined;
     }
     prevProps = props;
     return computed || (computed = component(props));
   };
 };
 
-var Fragment = (props) => {
+function Fragment (props) {
   return new JSXFragmentNode("", {  children: props.children ? [props.children] : [] });
 };
 
@@ -248,6 +252,8 @@ function createContext<CtxType>(defaultValue: CtxType) {
 function useContext(context: ReturnType<typeof createContext>) {
   return context.values[context.values.length - 1];
 };
+
+export { renderToReadableStream } from "./streaming.js"
 
 export {
   Fragment,
