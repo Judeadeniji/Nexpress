@@ -9,12 +9,12 @@
       "require": "./dist/index.js"
     },
     "./jsx-runtime": {
-      "import": "./dist/jsx/index.js",
-      "require": "./dist/jsx/index.js"
+      "import": "./dist/jsx.experimental/jsx-runtime.js",
+      "require": "./dist/jsx.experimental/jsx-runtime.js"
     },
     "./jsx": {
-      "import": "./dist/jsx/index.js",
-      "require": "./dist/jsx/index.js"
+      "import": "./dist/jsx.experimental/index.js",
+      "require": "./dist/jsx.experimental/index.js"
     }
   },
   "scripts": {

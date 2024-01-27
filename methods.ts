@@ -1,11 +1,12 @@
 import { ParsedPath } from "node:path";
 import { Request, Response } from "express";
-import { jsx } from "./jsx/index.js";
 import { ROUTE_CONFIG } from "./const.js";
 import { MethodExport } from "./types.js";
 import { cleanString } from "./html/utils.js";
 import { global_ctx } from "./server_context/context.js"
-import { renderToReadableStream } from "./jsx/index.js"
+//import { renderToReadableStream } from "./jsx/index.js"
+import { jsx } from "./jsx.experimental/jsx-runtime.js";
+import { renderToStream } from "./jsx.experimental/index.js"
 import { html as html$$ } from "./html/index.js"
 
 
@@ -13,10 +14,11 @@ export function isCjs() {
     return typeof module !== "undefined" && !!module?.exports;
 }
 
-export async function renderElement(element: any, req: Request, res: Response) {
+export async function renderElement(element: any,props: { req: Request, res: Response }, toStream) {
+    const { req, res } = props
     global_ctx.req = req
     global_ctx.res = res
-    const html = jsx(element, {
+    const j = jsx(element, {
         path: req.route.path,
         params: req.params,
         url: req.url,
@@ -29,11 +31,14 @@ export async function renderElement(element: any, req: Request, res: Response) {
     });
     
     res.setHeader('Content-Type', 'text/html');
-    res.setHeader('Transfer-Encoding', 'chunked');
-    
-    const stream = renderToReadableStream(html);
-    
-    stream.pipe(res)
+    if (toStream) {
+      res.setHeader('Transfer-Encoding', 'chunked');
+      const stream = renderToStream(j);
+      stream.pipe(res)
+    } else {
+      res.write(await j.toString())
+      res.end()
+    }
     //res.send(cleanString(html$$(html.toString())));
 }
 
@@ -108,7 +113,7 @@ export function isFileIgnored(parsedFile: ParsedPath) {
 }
 
 export function isHandler(handler: unknown): handler is MethodExport {
-    return typeof handler === "function" || Array.isArray(handler);
+    return typeof handler === "function" || Array.isArray(handler) && handler.every((h) => typeof h === "function");
 }
 
 export function getHandler(handler: MethodExport) {

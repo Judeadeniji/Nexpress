@@ -13,5 +13,6 @@ async function getAppConfig() {
 }
 
 export {
-  importSSRModule
+  importSSRModule,
+  getAppConfig
 }

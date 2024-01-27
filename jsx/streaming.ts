@@ -12,7 +12,7 @@ async function Suspense ({ children, fallback }) {
   if (!Array.isArray(children)) {
     children = [children];
   }
-  let resArray = [];
+  let resArray: any[] = [];
   try {
     resArray = children.map((child) => child.toString());
   } catch (err) {

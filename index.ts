@@ -24,11 +24,17 @@ function createApp(opts = {}) {
         outputDir: path.join(PROJECT_DIRECTORY, ".nexpress"),
         extensions: ROUTE_CONFIG.VALID_FILE_EXTENSIONS
       })
-      createRouter(app)
-      .then(() => app.listen(port, hostname, backlog, callback ))
-      .catch((error) => {
-        console.error(error)
-      });
+      .then(() => {
+        createRouter(app)
+        .then(() => app.listen(port, hostname, backlog, callback ))
+        .catch((error) => {
+          console.error(error)
+        });
+      })
+      .catch(e => {
+        console.error(e)
+        process.exit(1)
+      })
       // initiateErrorHandler();
     }
 
@@ -52,12 +58,11 @@ export {
   createApp as createNxApp,
 }
 
-export * from "./jsx/index.js"
-export * from "./jsx/components.js"
+export * from "./jsx.experimental/index.js"
+// export * from "./jsx/components.js"
 
 
 // export types
-
 export {
   Handler,
   Request,

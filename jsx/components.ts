@@ -202,7 +202,7 @@ function StyleTag() {
   })
 }
 
-export { Suspense } from "./streaming.js"
+export { Suspense } from "./streaming-2.js"
 
 export {
   ErrorBoundary,

@@ -88,7 +88,7 @@ function escapeToBuffer (str: string, buffer: StringBuffer) {
   buffer[0] += str.substring(lastIndex, index);
 };
 
-async function resolveCallback (str, phase, preserveCallbacks, context, buffer) {
+async function resolveCallback (str, phase, preserveCallbacks, context, buffer?: any) {
   const callbacks = str.callbacks;
   
   if (!callbacks?.length) {

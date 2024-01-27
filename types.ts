@@ -2,20 +2,20 @@ import { JSXNode } from "./jsx/index.js";
 import { type NExpressContext } from "./server_context/index.js"
 
 // declare a global JSX namespace
-declare global {
-    namespace JSX {
-        type IntrinsicElements = HTMLElement & {
-            [x in keyof HTMLElementTagNameMap]: HTMLElementTagNameMap[x];
-        } & {
-            [x in keyof HTMLElementDeprecatedTagNameMap]: HTMLElementDeprecatedTagNameMap[x];
-        };
-        interface Element {}
-        interface JSXProps {
-            children?: (JSX.Element| typeof JSXNode | string)[];
-            [x: string]: any;
-        }
-    }
-}
+// declare global {
+//     namespace JSX {
+//         type IntrinsicElements = HTMLElement & {
+//             [x in keyof HTMLElementTagNameMap]: HTMLElementTagNameMap[x];
+//         } & {
+//             [x in keyof HTMLElementDeprecatedTagNameMap]: HTMLElementDeprecatedTagNameMap[x];
+//         };
+//         interface Element {}
+//         interface JSXProps {
+//             children?: (JSX.Element| typeof JSXNode | string)[];
+//             [x: string]: any;
+//         }
+//     }
+// }
 
 type Handler = (ctx: NExpressContext) => void
 
@@ -36,7 +36,11 @@ export interface MethodExports {
 }
 
 export type Exports = MethodExports & {
-    default?: any;
+    default: {
+      default: Function 
+    } | Function;
+    middlewares?: any[];
+    stream?: Boolean
 };
 
 export interface RouterOptions {

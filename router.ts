@@ -34,49 +34,46 @@ async function createRouter(app: Express, options: RouterOptions = {}) {
 
     for (const { exports, url } of routes) {
         const exportMethods = Object.entries(exports);
+        const hasMiddlewares = Array.isArray(exports?.middlewares)
 
-        for (const [method, handler] of exportMethods) {
-            if (!handler) {
-                throw new Error(
-                    `Handler for method '${method}' in route '${url}' is undefined`
-                );
-            }
+        for (const [exp, exportValue] of exportMethods) {
 
-            const methodKey = getMethodKey(method) as Method;
-            const methodHandler = getHandler(handler).map(handler => {
+            const handler = !hasMiddlewares && isHandler(exportValue) ? {
+              methodKey: getMethodKey(exp),
+              methodHandler: getHandler(exportValue).map(handler => {
                 return (req, res: Response<any, Record<string, any>>) => {
                     const ctx = createNExpressCtx(req, res)
 
                     return handler(ctx)
                 }
-            });
-            if (methodHandler.length === 0){
-                // handle other cases
-
-                console.log(methodKey, handler)
-                continue
+              }),
+            } : null
+            if (!handler) {
+              continue;
             }
-
+            const methodKey = handler.methodKey as Method;
+            const methodHandler = handler.methodHandler;
             if (!ROUTE_CONFIG.DEFAULT_METHODS.includes(methodKey as (typeof ROUTE_CONFIG.DEFAULT_METHODS)[number]))
                 continue;
 
-            app[methodKey](url, ...methodHandler);
+            app[methodKey](url, ...(exports?.middlewares || []), ...methodHandler);
         }
 
         // jsx pages
         if (typeof exports.default !== "undefined") {
             if (isHandler(exports.default)) {
-                app.get(url, (req, res) => {
+                app.get(url, ...(exports?.middlewares || []), (req, res) => {
                     const componentFn = exports.default;
-                    renderElement(componentFn, req, res);
+                    renderElement(componentFn, { req, res }, Boolean(exports?.stream) === true ? true : false);
                 });
             } else if (
-                typeof exports.default === "object" &&
+                typeof exports.default !== "function" &&
                 isHandler(exports.default.default)
             ) {
-                app.get(url, (req, res) => {
+                app.get(url, ...(exports?.middlewares || []), (req, res) => {
+                    //@ts-ignore
                     const componentFn = exports.default.default;
-                    renderElement(componentFn, req, res);
+                    renderElement(componentFn, { req, res }, Boolean(exports?.stream) === true ? true : false);
                 });
             }
         }
